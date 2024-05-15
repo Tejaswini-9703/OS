@@ -1,65 +1,215 @@
-#include<stdio.h>
-#include<conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct
+{
+    int pid;
+    int bt;
+    int at;
+    int rt;
+    int ft;
+    int tat;
+    int wt;
+
+} Process;
+
+// Sort acc to arrival time, if arrival time same then compare burst time.
+void sort(int n, Process p[n])
+{
+    int i, j;
+    Process temp;
+
+    for (i = 0; i < n - 1; i++)
+        for (j = 0; j < (n - 1 - i); j++)
+            if ((p[j].at > p[j + 1].at) || ((p[j].at == p[j + 1].at) && (p[j].bt > p[j + 1].bt)))
+            {
+                temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+}
+
+// t = t % tq
+int countIteration(int n, Process p[n], int tq)
+{
+    int i, j = 0;
+    for (i = 0; i < n; i++)
+    {
+        if (p[i].bt % tq != 0)
+            j = j + (p[i].bt / tq) + 1;
+        else
+            j = j + (p[i].bt / tq);
+    }
+    return j;
+}
+
+void print_chart(int n, Process p[n])
+{
+    int i, j;
+    printf("\n\t+");
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            printf("---");
+        printf("+");
+    }
+    printf("\n\t|");
+    for (i = 0; i < n; i++)
+    {
+        printf(" P%d", p[i].pid);
+        for (j = 1; j < p[i].bt; j++)
+            printf("   ");
+        printf("|");
+    }
+    printf("\n\t+");
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            printf("---");
+        printf("+");
+    }
+
+    int check = 0;
+    printf("\n\t%d", p[0].at);
+    if (p[0].at > 9)
+        check = 1;
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            if (check == 1)
+            {
+                printf("  ");
+                check = 0;
+            }
+            else
+                printf("   ");
+        printf("%d", p[i].ft);
+        if (p[i].ft > 9)
+            check = 1;
+    }
+}
+
+//main rr function
+int execute(int n, Process p[n], int o, Process exec[o], int t, int tq)
+{
+    int i, j;
+    j = 0;
+    for (i = 0; i < o; i++)
+    {
+        if (i == 0)
+            t = p[i].at;
+        if (p[j].rt > 0)
+        {
+            exec[i] = p[j];
+            if (p[j].rt < tq)
+            {
+                t = t + p[j].rt;
+                exec[i].bt = p[j].rt;
+                p[j].rt = 0;
+                p[j].ft = t;
+            }
+            else
+            {
+                t = t + tq;
+                p[j].rt = p[j].rt - tq;
+                if (p[j].rt == 0)
+                    p[j].ft = t;
+                exec[i].bt = tq;
+            }
+            exec[i].ft = t;
+            exec[i].rt = p[j].rt;
+        }
+        else
+            i--;
+        j++;
+        if (j == n)
+            j = 0;
+    }
+
+    return t;
+}
+
+void print_table(int n, Process p[n])
+{
+    int i, avgw = 0, avgt = 0;
+    printf("\n\n\tpid\tAt\tBt\tFt\tTAt\tWt\n");
+    for (i = 0; i < n; i++)
+    {
+        p[i].tat = p[i].ft - p[i].at;
+        p[i].wt = p[i].tat - p[i].bt;
+        avgw = avgw + p[i].wt;
+        avgt = avgt + p[i].tat;
+        if (p[i].pid != -1)
+            printf("\n\t%d\t%d\t%d\t%d\t %d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].ft, p[i].tat, p[i].wt);
+    }
+    avgw = (avgw / n);
+    avgt = (avgt / n);
+    printf("\n\n\tAverage waiting time: %d units\n\tAverage turn-around time: %d units", avgw, avgt);
+}
 
 void main()
 {
-    int i, NOP, sum=0,count=0, y, quant, wt=0, tat=0, at[10], bt[10], temp[10];
-    float avg_wt, avg_tat;
-    printf(" Total number of process in the system: ");
-    scanf("%d", &NOP);
-    y = NOP;
+    int n, i, j, t, tq;
+    printf("\n\t\t\t\tRound Robin\n\n\t Enter the total number of processes: ");
+    scanf("%d", &n);
+    Process p[n];
 
+    printf("\n\t Enter the time quantum: ");
+    scanf("%d", &tq);
 
-for(i=0; i<NOP; i++)
-{
-printf("\n Enter the Arrival and Burst time of the Process[%d]\n", i+1);
-printf(" Arrival time is: \t");
-scanf("%d", &at[i]);
-printf(" \nBurst time is: \t");
-scanf("%d", &bt[i]);
-temp[i] = bt[i];
-}
-printf("Enter the Time Quantum for the process: \t");
-scanf("%d", &quant);
+    printf("\n\t Enter the following data for each process: ");
+    for (i = 0; i < n; i++)
+    {
+        printf("\n\t Process %d:\n\tArrival time: ", i + 1);
+        scanf("%d", &p[i].at);
+        printf("\tBurst time: ");
+        scanf("%d", &p[i].bt);
+        p[i].rt = p[i].bt;
+        p[i].pid = i + 1;
+    }
+    sort(n, p); 
 
-printf("\n Process No \t\t Burst Time \t\t TAT \t\t Waiting Time ");
-for(sum=0, i = 0; y!=0; )
-{
-if(temp[i] <= quant && temp[i] > 0)
-{
-    sum = sum + temp[i];
-    temp[i] = 0;
-    count=1;
-    }
-    else if(temp[i] > 0)
+    int u = countIteration(n, p, tq);
+    // printf("\n Divides into %d iterations.",o);
+    Process exec[u];
+
+    t = execute(n, p, u, exec, t, tq);
+    print_table(n, p);
+    printf("\n\n\t Gnatt chart\n");
+    print_chart(u, exec);
+    // printf("\n t: %d\n",t);
+
+    int upbt = 4, lowbt = 1, rand_at, rand_bt;
+
+    int s = t + 2;
+    int m;
+    printf("\n\n\n\t\t\tRandom CPU Burst\n\n\t Enter the total number of processes: ");
+    scanf("%d", &m);
+    Process q[m];
+    for (i = 0; i < m; i++)
     {
-        temp[i] = temp[i] - quant;
-        sum = sum + quant;
+        rand_at = s;
+        s++;
+        rand_bt = (rand() % (upbt - lowbt + 1)) + lowbt;
+        q[i].at = rand_at;
+        q[i].bt = rand_bt;
+        q[i].rt = q[i].bt;
+        q[i].pid = i + 1;
     }
-    if(temp[i]==0 && count==1)
-    {
-        y--;
-        printf("\nProcess No[%d] \t\t %d\t\t\t\t %d\t\t\t %d", i+1, bt[i], sum-at[i], sum-at[i]-bt[i]);
-        wt = wt+sum-at[i]-bt[i];
-        tat = tat+sum-at[i];
-        count =0;
-    }
-    if(i==NOP-1)
-    {
-        i=0;
-    }
-    else if(at[i+1]<=sum)
-    {
-        i++;
-    }
-    else
-    {
-        i=0;
-    }
-}
-avg_wt = wt * 1.0/NOP;
-avg_tat = tat * 1.0/NOP;
-printf("\n Average Turn Around Time: \t%f", avg_wt);
-printf("\n Average Waiting Time: \t%f", avg_tat);
-getch();
+
+    sort(m, q);
+
+    int v = countIteration(m, q, tq);
+    // printf("\n Divides into %d iterations.",v);
+    Process exek[v];
+
+    t = execute(m, q, v, exek, t, tq);
+    print_table(m, q);
+    printf("\n\n\t Gnatt chart\n");
+    print_chart(v, exek);
+
+    printf("\n\n\n\t Combined Gnatt chart\n");
+    print_chart(u, exec);
+    printf("\n\n\t\t--IO of 2 units--\n");
+    print_chart(v, exek);
 }
