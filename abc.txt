@@ -1,0 +1,1466 @@
+RR--------------------------------------------------->>>
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct
+{
+    int pid;
+    int bt;
+    int at;
+    int rt;
+    int ft;
+    int tat;
+    int wt;
+
+} Process;
+
+// Sort acc to arrival time, if arrival time same then compare burst time.
+void sort(int n, Process p[n])
+{
+    int i, j;
+    Process temp;
+
+    for (i = 0; i < n - 1; i++)
+        for (j = 0; j < (n - 1 - i); j++)
+            if ((p[j].at > p[j + 1].at) || ((p[j].at == p[j + 1].at) && (p[j].bt > p[j + 1].bt)))
+            {
+                temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+}
+
+// t = t % tq
+int countIteration(int n, Process p[n], int tq)
+{
+    int i, j = 0;
+    for (i = 0; i < n; i++)
+    {
+        if (p[i].bt % tq != 0)
+            j = j + (p[i].bt / tq) + 1;
+        else
+            j = j + (p[i].bt / tq);
+    }
+    return j;
+}
+
+void print_chart(int n, Process p[n])
+{
+    int i, j;
+    printf("\n\t+");
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            printf("---");
+        printf("+");
+    }
+    printf("\n\t|");
+    for (i = 0; i < n; i++)
+    {
+        printf(" P%d", p[i].pid);
+        for (j = 1; j < p[i].bt; j++)
+            printf("   ");
+        printf("|");
+    }
+    printf("\n\t+");
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            printf("---");
+        printf("+");
+    }
+
+    int check = 0;
+    printf("\n\t%d", p[0].at);
+    if (p[0].at > 9)
+        check = 1;
+    for (i = 0; i < n; i++)
+    {
+        for (j = 1; j <= p[i].bt; j++)
+            if (check == 1)
+            {
+                printf("  ");
+                check = 0;
+            }
+            else
+                printf("   ");
+        printf("%d", p[i].ft);
+        if (p[i].ft > 9)
+            check = 1;
+    }
+}
+
+//main rr function
+int execute(int n, Process p[n], int o, Process exec[o], int t, int tq)
+{
+    int i, j;
+    j = 0;
+    for (i = 0; i < o; i++)
+    {
+        if (i == 0)
+            t = p[i].at;
+        if (p[j].rt > 0)
+        {
+            exec[i] = p[j];
+            if (p[j].rt < tq)
+            {
+                t = t + p[j].rt;
+                exec[i].bt = p[j].rt;
+                p[j].rt = 0;
+                p[j].ft = t;
+            }
+            else
+            {
+                t = t + tq;
+                p[j].rt = p[j].rt - tq;
+                if (p[j].rt == 0)
+                    p[j].ft = t;
+                exec[i].bt = tq;
+            }
+            exec[i].ft = t;
+            exec[i].rt = p[j].rt;
+        }
+        else
+            i--;
+        j++;
+        if (j == n)
+            j = 0;
+    }
+
+    return t;
+}
+
+void print_table(int n, Process p[n])
+{
+    int i, avgw = 0, avgt = 0;
+    printf("\n\n\tpid\tAt\tBt\tFt\tTAt\tWt\n");
+    for (i = 0; i < n; i++)
+    {
+        p[i].tat = p[i].ft - p[i].at;
+        p[i].wt = p[i].tat - p[i].bt;
+        avgw = avgw + p[i].wt;
+        avgt = avgt + p[i].tat;
+        if (p[i].pid != -1)
+            printf("\n\t%d\t%d\t%d\t%d\t %d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].ft, p[i].tat, p[i].wt);
+    }
+    avgw = (avgw / n);
+    avgt = (avgt / n);
+    printf("\n\n\tAverage waiting time: %d units\n\tAverage turn-around time: %d units", avgw, avgt);
+}
+
+void main()
+{
+    int n, i, j, t, tq;
+    printf("\n\t\t\t\tRound Robin\n\n\t Enter the total number of processes: ");
+    scanf("%d", &n);
+    Process p[n];
+
+    printf("\n\t Enter the time quantum: ");
+    scanf("%d", &tq);
+
+    printf("\n\t Enter the following data for each process: ");
+    for (i = 0; i < n; i++)
+    {
+        printf("\n\t Process %d:\n\tArrival time: ", i + 1);
+        scanf("%d", &p[i].at);
+        printf("\tBurst time: ");
+        scanf("%d", &p[i].bt);
+        p[i].rt = p[i].bt;
+        p[i].pid = i + 1;
+    }
+    sort(n, p); 
+
+    int u = countIteration(n, p, tq);
+    // printf("\n Divides into %d iterations.",o);
+    Process exec[u];
+
+    t = execute(n, p, u, exec, t, tq);
+    print_table(n, p);
+    printf("\n\n\t Gnatt chart\n");
+    print_chart(u, exec);
+    // printf("\n t: %d\n",t);
+
+    int upbt = 4, lowbt = 1, rand_at, rand_bt;
+
+    int s = t + 2;
+    int m;
+    printf("\n\n\n\t\t\tRandom CPU Burst\n\n\t Enter the total number of processes: ");
+    scanf("%d", &m);
+    Process q[m];
+    for (i = 0; i < m; i++)
+    {
+        rand_at = s;
+        s++;
+        rand_bt = (rand() % (upbt - lowbt + 1)) + lowbt;
+        q[i].at = rand_at;
+        q[i].bt = rand_bt;
+        q[i].rt = q[i].bt;
+        q[i].pid = i + 1;
+    }
+
+    sort(m, q);
+
+    int v = countIteration(m, q, tq);
+    // printf("\n Divides into %d iterations.",v);
+    Process exek[v];
+
+    t = execute(m, q, v, exek, t, tq);
+    print_table(m, q);
+    printf("\n\n\t Gnatt chart\n");
+    print_chart(v, exek);
+
+    printf("\n\n\n\t Combined Gnatt chart\n");
+    print_chart(u, exec);
+    printf("\n\n\t\t--IO of 2 units--\n");
+    print_chart(v, exek);
+}
+
+PROD-CONS--------------------------------------------------->>>
+#include<stdio.h>
+#include<pthread.h>
+#include<semaphore.h>
+#include<stdlib.h>
+
+sem_t empty, full;
+pthread_mutex_t mutex;
+int buffer[5];
+int count=0;
+
+void *producer(void *arg){
+    long int num=(long int)arg;
+
+    sem_wait(&empty);
+    pthread_mutex_lock(&mutex);
+
+    buffer[count]=rand()%50;
+    printf("\n Producer %ld produced: %d \n", num+1, buffer[count]);
+    count++;
+    printf(" Buffer: ");
+    for(int i=0;i<count;i++){
+        printf("%d ", buffer[i]);
+    }
+    printf("\n");
+    sleep(1);
+
+    pthread_mutex_unlock(&mutex);
+    sem_post(&full);
+    pthread_exit(NULL);
+}
+
+void *consumer(void *arg){
+    long int num=(long int)arg;
+
+    sem_wait(&full);
+    pthread_mutex_lock(&mutex);
+
+    count--;
+    printf("\n Consumer %ld consumed: %d \n", num+1, buffer[count]);
+    printf(" Buffer: ");
+    for(int i=0;i<count;i++){
+        printf("%d ", buffer[i]);
+    }
+    printf("\n");
+    sleep(1);
+
+    pthread_mutex_unlock(&mutex);
+    sem_post(&empty);
+    pthread_exit(NULL);
+}
+
+int main(){
+    int np, nc;
+    pthread_t p[10], c[10];
+    unsigned long int i,j,k,l;
+
+    printf("Enter number of producers and number of consumers: ");
+    scanf("%d %d",&np, &nc);
+
+    sem_init(&empty,0,5); //variable name, not shared, initial value
+    sem_init(&full,0,0);
+
+    pthread_mutex_init(&mutex, NULL);
+
+    //create producer and consumer threads
+    for(i=0;i<np;i++)
+        pthread_create(&p[i],NULL, producer, (void *)i);
+    for(j=0;j<nc;j++)
+        pthread_create(&c[j],NULL, consumer, (void *)j);
+
+    //join the threads
+    for(k=0;k<np;k++)
+        pthread_join(p[k], NULL);
+    for(l=0;l<nc;l++)
+        pthread_join(c[l], NULL);
+    return 0;
+}
+
+
+BANKERS--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+
+int main() {
+    int n, m, i, j, k;
+    printf("\nEnter the number of processes: ");
+    scanf("%d", &n);
+    printf("\nEnter the number of resources: ");
+    scanf("%d", &m);
+    
+    int alloc[n][m], max[n][m], avail[m], need[n][m];
+    int f[n];   // finished array
+    int ans[n]; // work or safe seq
+    int ind = 0;
+    
+    printf("\nEnter the Allocation Matrix:\n");
+    printf("A B C \n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            scanf("%d", &alloc[i][j]);
+        }
+    }
+    
+    printf("\nEnter the Maximum need Matrix:\n");
+    printf("A B C \n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            scanf("%d", &max[i][j]);
+        }
+    }
+    
+    printf("\nEnter the Available Resources Matrix:\n");
+    printf("A B C \n");
+    for (i = 0; i < m; i++) {
+        scanf("%d", &avail[i]);
+    }
+    
+    // Calculate Need Matrix
+    printf("\nCalculating the Need Matrix:\n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            need[i][j] = max[i][j] - alloc[i][j];
+        }
+    }
+    
+    // Display table
+    printf("\nProcess   Allocation   Max Need   Available   Remaining Need\n");
+    for (i = 0; i < n; i++) {
+        printf("P%d\t", i);
+        // Allocation
+        for (j = 0; j < m; j++) {
+            printf("%d ", alloc[i][j]);
+        }
+        printf("\t");
+        // Max Need
+        for (j = 0; j < m; j++) {
+            printf("%d ", max[i][j]);
+        }
+        printf("\t");
+        // Available
+        if (i == 0) {
+            for (j = 0; j < m; j++) {
+                printf("%d ", avail[j]);
+            }
+        }
+        printf("\t");
+        // Remaining Need
+        for (j = 0; j < m; j++) {
+            printf("%d ", need[i][j]);
+        }
+        printf("\n");
+    }
+    
+    // Banker's Algorithm
+    for (k = 0; k < n; k++) {
+        f[k] = 0;
+    }
+    
+    for (k = 0; k < n; k++) {
+        for (i = 0; i < n; i++) {
+            if (f[i] == 0) {
+                int flag = 1;
+                for (j = 0; j < m; j++) {
+                    if (need[i][j] > avail[j]) {
+                        flag = 0;
+                        break;
+                    }
+                }
+                if (flag == 1) {
+                    ans[ind++] = i;
+                    for (int y = 0; y < m; y++) {
+                        avail[y] += alloc[i][y];
+                    }
+                    f[i] = 1;
+                }
+            }
+        }
+    }
+    
+    int flag = 1;
+    for (i = 0; i < n; i++) {
+        if (f[i] == 0) {
+            flag = 0;
+            printf("\nFollowing system is not in safe state\n");
+            break;
+        }
+    }
+    if (flag == 1) {
+        printf("\nSafe Sequence is : ");
+        printf("< ");
+        for (i = 0; i < n; i++) {
+            printf("P%d ", ans[i]);
+        }
+        printf(">");
+    }
+    printf("\n");
+  
+    return 0;
+}
+
+FIFO--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+int main()
+{
+    int i, j, n, ref_str[50], frame[10], no, k, avail, fcount = 0; 
+    printf("\n ENTER THE NUMBER OF PAGES : ");
+    scanf("%d", &n); 
+    printf("\n ENTER THE REFERENCE STRING :\n");
+    for (i = 1; i <= n; i++)
+        scanf("%d", &ref_str[i]);
+    printf("\n ENTER THE NUMBER OF FRAMES : ");
+    scanf("%d", &no);
+    for (i = 0; i < no; i++)
+        frame[i] = -1; 
+    j = 0;             // initialize page frame pointer
+    printf("\n ref string    \tpage frames     \tHit/Fault\n");
+    for (i = 1; i <= n; i++)
+    {
+        printf("%d\t\t", ref_str[i]);
+        avail = 0; //default value
+        for (k = 0; k < no; k++)
+            if (frame[k] == ref_str[i]) 
+            {
+                avail = 1; 
+                for (k = 0; k < no; k++)
+                    printf("%d\t", frame[k]); 
+                printf("H");                 
+            }
+        if (avail == 0)
+        {
+            frame[j] = ref_str[i]; 
+            j = (j + 1) % no;     
+            fcount++;             
+            for (k = 0; k < no; k++)
+                printf("%d\t", frame[k]); 
+            printf("F");                
+        }
+        printf("\n");
+    }
+    printf("\nPage Fault Is: %d", fcount);
+    printf("\nPage Hit Is: %d", (n - fcount));
+    printf("\nPage Fault Ratio Is: %.2f", ((float)fcount/n));
+    printf("\nPage Hit Ratio Is: %.2f", ((float)(n - fcount)/n));
+    return 0;
+}
+
+LRU--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+// 7
+// 0
+// 1
+// 2
+// 0
+// 3
+// 0
+// 4
+// 2
+// 3
+// 0
+// 3
+// 2
+// 1
+// 2
+void lruPageReplacement(int pages[], int n, int capacity) {
+    int frame[capacity];
+    int pageFaults = 0;
+    int hits = 0;
+    int recentCount = 0;
+    int recent[capacity];
+    int hit = 0;
+
+    for (int i = 0; i < capacity; i++) {
+        frame[i] = -1;
+        recent[i] = 0;
+    }
+
+    printf("\n ref string    \tpage frames     \tHit/Fault\n");
+
+    for (int i = 0; i < n; i++) {
+        int page = pages[i];
+        int pageFound = 0;
+
+        // Check if the page is already present in the frame
+        for (int j = 0; j < capacity; j++) {
+            if (frame[j] == page) {
+                pageFound = 1;
+                recent[j] = recentCount++;
+                hits++;
+                hit = 1;
+                break;
+            }
+        }
+
+        if (!pageFound) {
+            // Page is not present, find the least recently used page in the frame
+            int lruIndex = 0;
+            for (int j = 1; j < capacity; j++) {
+                if (recent[j] < recent[lruIndex]) {
+                    lruIndex = j;
+                }
+            }
+
+            // Replace the least recently used page with the new page
+            frame[lruIndex] = page;
+            recent[lruIndex] = recentCount++;
+            pageFaults++;
+        }
+
+        // Print the current page and frame status
+        printf("%d\t\t", page);
+        for (int j = 0; j < capacity; j++) {
+            if (frame[j] != -1)
+                printf("%d\t\t", frame[j]);
+            else
+                printf("-\t\t");
+        }
+        hit == 1 ? printf("\tH") : printf("\tF");
+        printf("\n");
+        hit = 0;
+    }
+
+    printf("\nPage Fault Is: %d", pageFaults);
+    printf("\nPage Hit Is: %d", hits);
+    printf("\nPage Fault Ratio Is: %.2f", ((float)pageFaults/n));
+    printf("\nPage Hit Ratio Is: %.2f", ((float)hits/n));
+}
+
+int main() {
+    int n;
+
+    printf("\n ENTER THE NUMBER OF PAGES : ");
+    scanf("%d", &n);
+
+    int pages[n];
+
+     printf("\n ENTER THE REFERENCE STRING :\n");
+    for (int i = 0; i < n; i++)
+        scanf("%d", &pages[i]);
+
+    int capacity;
+
+    printf("\n ENTER THE NUMBER OF FRAMES : ");
+    scanf("%d", &capacity);
+
+    lruPageReplacement(pages, n, capacity);
+
+    return 0;
+}
+
+OPTIMAL--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+
+// Function to find the key with minimum value in the map
+int minFromMap(int mp[], int size) {
+    int min = 100000;
+    int min_key = -1;
+    for (int i = 0; i < size; i++) {
+        if (mp[i] <= min) {
+            min = mp[i];
+            min_key = i;
+        }
+    }
+    return min_key;
+}
+
+int main() {
+    printf("\n ENTER THE NUMBER OF PAGES : ");
+    int n;
+    scanf("%d", &n);
+    
+    int ref_str[n];
+    
+   printf("\n ENTER THE REFERENCE STRING :\n");
+    for (int i = 0; i < n; i++)
+        scanf("%d", &ref_str[i]);
+    
+    printf("\n ENTER THE NUMBER OF FRAMES : ");
+    int no;
+    scanf("%d", &no);
+    
+    int frame[no];
+    for (int i = 0; i < no; i++)
+        frame[i] = -1;
+    
+    int mp[no]; // Using an array instead of unordered_map
+    for (int i = 0; i < no; i++)
+        mp[i] = 0;
+    
+    printf("\n ref string    \tpage frames     \tHit/Fault\n");
+    
+    int fcount = 0, hit = 0, flag = 0;
+    int j = 0;
+    
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t", ref_str[i]);
+        flag = 0;
+        
+        for (int k = 0; k < no; k++) {
+            if (frame[k] == ref_str[i]) {
+                mp[ref_str[i]]--;
+                flag = 1;
+                printf("\t");
+                
+                for (k = 0; k < no; k++)
+                    if (frame[k] != -1)
+                        printf("%d\t", frame[k]);
+                    else
+                        printf("_\t");
+                
+                printf("\tH");
+                hit++;
+            }
+        }
+        
+        if (flag == 0) {
+            if (j < no) {
+                frame[j] = ref_str[i];
+                mp[ref_str[i]]--;
+                j = (j + 1) % no;
+                fcount++;
+                
+                printf("\t");
+                for (int k = 0; k < no; k++)
+                    if (frame[k] != -1)
+                        printf("%d\t", frame[k]);
+                    else
+                        printf("_\t");
+                
+                printf("\tF\n");
+                continue;
+            } else {
+                for (int x = 0; x < no; x++) {
+                    if (frame[x] == minFromMap(mp, no)) {
+                        frame[x] = ref_str[i];
+                        break;
+                    }
+                }
+                mp[ref_str[i]]--;
+                fcount++;
+                
+                printf("\t");
+                for (int k = 0; k < no; k++)
+                    if (frame[k] != -1)
+                        printf("%d\t", frame[k]);
+                    else
+                        printf("_\t");
+                
+                printf("\tF");
+            }
+        }
+        printf("\n");
+    }
+    
+    printf("\nPage Fault Is %d\n", fcount);
+    printf("Page Hit Is %d\n", hit);
+    printf("\nPage Fault Ratio Is: %.2f", ((float)fcount/n));
+    printf("\nPage Hit Ratio Is: %.2f", ((float)hit
+    /n));
+    
+    return 0;
+}
+
+
+FCFS--------------------------------------------------->>>--------------------------------------------------->>>
+#include<stdio.h>
+#include<stdlib.h>
+#define max 30
+
+void fcfs(){
+    int i,j, n, bt[max], wt[max], tat[max],ct[max], at[max],pid[max];
+    float wtavg, tatavg;
+    printf("\nEnter the number of processes (MAX 30)-- ");
+    scanf("%d", &n);
+    for(i=0; i<n; i++){
+        printf("\n Enter the arrival time of process %d -- ", i);
+        scanf("%d", &at[i]);
+        pid[i] = i;
+    }
+    for(i=0; i<n; i++){
+        printf("\n Enter the burst time of process %d -- ", i);
+        scanf("%d", &bt[i]);
+    }
+    wt[0] = wtavg = 0;
+    tat[0] = tatavg = bt[0];
+    for(i=0; i<n-1; i++){
+        for(j=0; j<n-i-1; j++){
+            if(at[j] > at[j+1]){
+                // Swap arrival time
+                int temp = at[j];
+                at[j] = at[j+1];
+                at[j+1] = temp;
+
+                // Swap burst time
+                temp = bt[j];
+                bt[j] = bt[j+1];
+                bt[j+1] = temp;
+
+                // Swap process id
+                temp = pid[j];
+                pid[j] = pid[j+1];
+                pid[j+1] = temp;
+            }
+        }
+    }
+    /*for(i=0; i<n; i++){
+        wt[i] = wt[i-1] + bt[i-1];
+        tat[i] = tat[i-1] + bt[i];
+        wtavg = wtavg + wt[i];
+        tatavg = tatavg + tat[i];
+    }*/
+
+        for (int i = 0; i < n; i++)
+    {
+        wt[i]=0;
+        tat[i]=0;
+        for (int j = 0; j < i; j++)
+        {
+
+            wt[i] = wt[i]+bt[j];
+        }
+        ct[i]= ct[i-1]+bt[i];
+        ct[0]= bt[0]+at[0];
+        tat[i]= ct[i]-at[i];
+
+        wtavg = wtavg+wt[i];
+        tatavg= tatavg+tat[i];
+
+        printf("%d\t\t\t%d\t\t%d\t\t%d", i+1, bt[i], wt[i], ct[i]);
+        printf("\n");
+    }
+
+    printf("\n\t PROCESS \t ARRIVAL TIME \t BURST TIME \t WAITING TIME \t COMPLETION TIME \t TURNAROUND TIME\n");
+    for(i=0; i<n; i++){
+        printf("\n\t P[%d] \t\t %d \t\t %d \t\t %d \t\t %d \t\t %d", pid[i], at[i], bt[i], wt[i], ct[i], tat[i]);
+    }
+    printf("\nAverage Waiting Time -- %f", wtavg/n);
+    printf("\nAverage Turnaround Time -- %f", tatavg/n);
+        printf("\nGantt Chart:\n");
+    printf(" ");
+    for(i=0; i<n; i++){
+        printf("-----------");
+    }
+    printf("\n|");
+    for(i=0; i<n; i++){
+        printf("   P[%d]   |", pid[i]);
+    }
+    printf("\n ");
+    for(i=0; i<n; i++){
+        printf("-----------");
+    }
+    printf("\n0");
+    for(i=0; i<n; i++){
+        printf("          %d", ct[i]);
+    }
+
+}
+int main(){
+    fcfs();
+    return 0;
+}
+
+PRIORITY NON-PRE--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+
+// Function to swap two variables
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int main() {
+    int n;
+    printf("Enter Number of Processes: ");
+    scanf("%d", &n);
+
+    // b is array for burst time, p for priority and index for process id
+    int b[n], p[n], index[n];
+    for (int i = 0; i < n; i++) {
+        printf("Enter Burst Time and Priority Value for Process %d: ", i + 1);
+        scanf("%d %d", &b[i], &p[i]);
+        index[i] = i + 1;
+    }
+
+    // Reversing the priorities to consider lower the number higher the priority
+    for (int i = 0; i < n; i++) {
+        p[i] = n - p[i] + 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        int a = p[i], m = i;
+
+        // Finding out highest priority element and placing it at its desired position
+        for (int j = i; j < n; j++) {
+            if (p[j] > a) {
+                a = p[j];
+                m = j;
+            }
+        }
+
+        // Swapping processes
+        swap(&p[i], &p[m]);
+        swap(&b[i], &b[m]);
+        swap(&index[i], &index[m]);
+    }
+
+    // T stores the starting time of process
+    int t = 0;
+
+    // Printing scheduled process
+    printf("Order of Process Execution is\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d is executed from %d to %d\n", index[i], t, t + b[i]);
+        t += b[i];
+    }
+    printf("\n");
+    printf("PID       Burst      Wait      Turnaround\n");
+    int wait_time = 0;
+    for (int i = 0; i < n; i++) {
+
+        printf("P%d          %d          %d          %d\n", index[i], b[i], wait_time, wait_time + b[i]);
+        wait_time += b[i];
+    }
+    return 0;
+}
+
+PROIORITY P--------------------------------------------------->>>--------------------------------------------------->>>
+#include <stdio.h>
+#include <limits.h>
+
+int main()
+{
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    int at[n], bt[n], temp[n], ct[n], tat[n], wt[n], priority[n], seq[n], premptime[n];
+    int completed = 0;
+    int current_process = -1;
+    int time = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        printf("Enter the arrival time of process %d: ", i + 1);
+        scanf("%d", &at[i]);
+        printf("Enter the burst time of process %d: ", i + 1);
+        scanf("%d", &bt[i]);
+        temp[i] = bt[i];
+        ct[i] = 0;
+        tat[i] = 0;
+        wt[i] = 0;
+        printf("Enter the priority of process %d: ", i + 1);
+        scanf("%d", &priority[i]);
+        printf("\n");
+    }
+
+    while (completed < n)
+    {
+        int min_priority = INT_MAX;
+        int min_index = -1;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (at[i] <= time && priority[i] < min_priority && bt[i] > 0)
+            {
+                min_priority = priority[i];
+                min_index = i;
+            }
+        }
+
+        // Preempt
+        if (min_index != -1 && min_index != current_process)
+        {
+            if (current_process != -1 && bt[current_process] > 0)
+            {
+                wt[current_process]++;
+            }
+            seq[completed] = min_index;
+            premptime[completed] = time;
+            current_process = min_index;
+        }
+
+        if (current_process != -1 && --bt[current_process] == 0)
+        {
+            min_priority = INT_MAX;
+            time++;
+            ct[current_process] = time;
+            tat[current_process] = ct[current_process] - at[current_process];
+            wt[current_process] = tat[current_process] - temp[current_process];
+            completed++;
+            current_process = -1;
+        }
+        else
+        {
+            time++;
+        }
+    }
+
+    printf("Process\tAT\tBT\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++)
+    {
+        printf("%d\t%d\t%d\t%d\t%d\t%d\n", i + 1, at[i], temp[i], ct[i], tat[i], wt[i]);
+    }
+
+    printf("Gantt Chart:\n");
+    for (int i = 0; i < n; i++)
+    {
+        printf("| P%d ", seq[i] + 1);
+    }
+    printf("|\n");
+    for (int i = 0; i < n; i++)
+    {
+        printf("%d\t", premptime[i]);
+    }
+    printf("%d\n", ct[n - 1]);
+
+    float avgTAT = 0;
+    float avgWT = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        avgTAT += tat[i];
+        avgWT += wt[i];
+    }
+
+    avgTAT /= n;
+    avgWT /= n;
+
+    printf("Average TAT: %.2f\n", avgTAT);
+    printf("Average WT: %.2f\n", avgWT);
+
+    return 0;
+}
+
+
+SJF------------------------------------------------------------>>>
+#include<stdio.h>
+#include<stdlib.h>
+#define max 30
+
+void sjf(){
+    int i,j, n, bt[max], wt[max], tat[max], at[max],pid[max],temp;
+    float wtavg, tatavg;
+    printf("\nEnter the number of processes (MAX 30)-- ");
+    scanf("%d", &n);
+    for(i=0; i<n; i++){
+        printf("\n Enter the burst time of process %d -- ", i);
+        scanf("%d", &bt[i]);
+        pid[i] = i;
+    }
+    wt[0] = wtavg = 0;
+    tat[0] = tatavg = bt[0];
+
+        for(i=0; i<n-1; i++){
+        for(j=0; j<n-i-1; j++){
+            if(bt[j] > bt[j+1]){                
+                // Swap burst time
+                temp = bt[j];
+                bt[j] = bt[j+1];
+                bt[j+1] = temp;
+
+                // Swap process id
+                temp = pid[j];
+                pid[j] = pid[j+1];
+                pid[j+1] = temp;
+            }
+        }
+    }
+    for(i=1; i<n; i++){
+        wt[i] = wt[i-1] + bt[i-1];
+        tat[i] = tat[i-1] + bt[i];
+        wtavg = wtavg + wt[i];
+        tatavg = tatavg + tat[i];
+    }
+    printf("\n\t PROCESS \t BURST TIME \t WAITING TIME \t TURNAROUND TIME\n");
+    for(i=0; i<n; i++){
+        printf("\n\t P[%d] \t\t %d \t\t %d \t\t %d", pid[i], bt[i], wt[i], tat[i]);
+    }
+    printf("\nAverage Waiting Time -- %f", wtavg/n);
+    printf("\nAverage Turnaround Time -- %f", tatavg/n);
+        printf("\nGantt Chart:\n");
+    printf(" ");
+    for(i=0; i<n; i++){
+        printf("-----------");
+    }
+    printf("\n|");
+
+    for(i=0; i<n; i++){
+        printf("   P[%d]   |", pid[i]);
+    }
+    printf("\n ");
+    for(i=0; i<n; i++){
+        printf("-----------");
+    }
+    printf("\n0");
+    for(i=0; i<n; i++){
+        printf("          %d", tat[i]);
+    }
+    printf("\n");
+
+
+
+}
+int main(){
+    sjf();
+    return 0;
+}
+
+SJF_P------------------------------------------------------------>>>
+#include <stdio.h>
+#include <limits.h>
+
+typedef struct {
+    int pid;
+    int at;
+    int bt;
+    int rt;
+    int ct;
+    int tat;
+    int wt;
+} Process;
+
+int findShortestJob(int n, Process p[], int time) {
+    int min_index = -1;
+    int min_bt = INT_MAX;
+    for (int i = 0; i < n; i++) {
+        if (p[i].at <= time && p[i].rt < min_bt && p[i].rt > 0) {
+            min_bt = p[i].rt;
+            min_index = i;
+        }
+    }
+    return min_index;
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    Process p[n];
+    for (int i = 0; i < n; i++) {
+        printf("Enter arrival time for process %d: ", i + 1);
+        scanf("%d", &p[i].at);
+        printf("Enter burst time for process %d: ", i + 1);
+        scanf("%d", &p[i].bt);
+        p[i].pid = i + 1;
+        p[i].rt = p[i].bt;
+        p[i].ct = 0;
+        p[i].tat = 0;
+        p[i].wt = 0;
+    }
+
+    int time = 0;
+    int completed = 0;
+    int current_process = -1;
+    int seq[n];
+
+    while (completed < n) {
+        int shortest_job = findShortestJob(n, p, time);
+        if (shortest_job != -1 && shortest_job != current_process) {
+            if (current_process != -1 && p[current_process].rt > 0) {
+                p[current_process].wt++;
+            }
+            seq[completed] = shortest_job;
+            current_process = shortest_job;
+        }
+
+        if (current_process != -1) {
+            p[current_process].rt--;
+            time++;
+            if (p[current_process].rt == 0) {
+                p[current_process].ct = time;
+                p[current_process].tat = p[current_process].ct - p[current_process].at;
+                p[current_process].wt = p[current_process].tat - p[current_process].bt;
+                completed++;
+                current_process = -1;
+            }
+        } else {
+            time++;
+        }
+    }
+
+    float avgTAT = 0;
+    float avgWT = 0;
+
+    printf("Process\tAT\tBT\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        avgTAT += p[i].tat;
+        avgWT += p[i].wt;
+        printf("%d\t%d\t%d\t%d\t%d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].ct, p[i].tat, p[i].wt);
+    }
+
+    avgTAT /= n;
+    avgWT /= n;
+
+    printf("Gantt Chart:\n");
+    for (int i = 0; i < n; i++) {
+        printf("| P%d ", seq[i] + 1);
+    }
+    printf("|\n");
+
+    printf("Average TAT: %.2f\n", avgTAT);
+    printf("Average WT: %.2f\n", avgWT);
+
+    return 0;
+}
+
+
+SYSTEM CALL--------------------------------------------------------->>>
+#include<unistd.h> // File related operations
+#include<stdio.h>
+#include<stdlib.h> // Str len
+#include<sys/types.h> // get pid,ppid,
+#include<sys/stat.h> // Stat realted information showing
+// #include <sys/wait.h>
+#include<fcntl.h> // Constant file accessing mods (O_RDONLY,O_WRONLY)
+
+void fileSystemCalls(){
+    int fd;
+    char buffer[10];
+
+    fd = open("hello.txt", O_CREAT | O_RDWR);
+
+    if(fd<0){
+        perror("open");
+        return;
+    }
+     // Write data to a file
+    int wrritenBytes=write(fd,"Hello, I am Sanket",strlen("Hello, I am Sanket"));
+
+    if(wrritenBytes < 0){
+        perror("write");
+    }
+
+    lseek(fd,0,SEEK_SET);
+
+    int readBytes=read(fd,buffer,sizeof(buffer));
+
+    if(readBytes<0){
+        perror("read");
+        return ;
+    }
+    else{
+        buffer[readBytes]='\0';
+        printf("Read Data : %s\n",buffer);
+    }
+
+    // Close the file
+    close(fd);
+
+    // Remove the file
+    unlink("hello.txt");
+
+}
+
+void processSystemCalls(){
+    pid_t p;
+    printf("Before fork : ");
+    p=fork();
+    int status;
+
+    if(p==0){
+        printf("I am child having my id : %d\n",getpid());
+        printf("I am parent process having id : %d\n",getppid());
+    }
+    else{
+        printf("Parent Id : %d\n",getpid());
+        printf("Child id : %d\n",p);
+        wait(&status); // Wating to terminate child process
+    }
+
+}
+
+void communicationSysCalls(){
+
+/* fd[0] => Reading end fd[1] => Writing End 
+    Creates unique pipe
+*/
+    int fd[2];
+    pipe(fd);
+    char buffer[100];
+    pid_t p;
+    p=fork(); 
+
+    if(p>0){
+        printf("Passing value to child.\n");
+        write(fd[1],"Hello,I am Sanket\n",strlen("Hello,I am Sanket\n"));
+    }
+    else{
+        printf("Child received data.\n");
+        int n=read(fd[0],buffer,100);
+        write(1,buffer,n);
+    }
+    wait(NULL); // Wait for to fininsh the child process
+
+    /* Parent Pid : Sender 
+      Child proecss : Receiver
+    */
+
+}
+
+void informationSysCall(){
+    // struct stat fileStat;
+
+    // int d = stat("home.txt",&fileStat);
+
+    // if(d<0){
+    //     perror("Stat Error");
+    //     return ;
+    // }
+
+    // printf("Inofrmation of file : \n");
+    // printf("Permission of File : %o\n",fileStat.st_mode);
+    // printf("UserID of file : %d\n",fileStat.st_uid);
+    // printf("GroupId of file : %d\n",fileStat.st_gid);
+    // printf("File size  : %lld bytes.",(long long)fileStat.st_size);
+
+    struct stat fileStat;
+    int d = stat("hello.txt",&fileStat);
+
+    printf("File information : \n");
+    printf("File Length : %lld bytes.",fileStat.st_size);
+    printf("Group Id : %d\n",fileStat.st_gid);
+    printf("Permissions: %d\n",fileStat.st_mode);
+    printf("User Id: %d\n",fileStat.st_uid);
+}
+
+int main(){
+
+
+    return 0;
+}
+
+Matrix Opre--------------------------------------------------------->>>
+#include<stdio.h>
+#include<pthread.h>
+#include<stdlib.h>
+
+#define THREADS_NUM 3
+int size;
+int mat1[100][100],mat2[100][100];
+int add[100][100],sub[100][100],mul[100][100];
+
+void *addition(){
+    for(int i=0;i<size;i++){
+         for(int j=0;j<size;j++){
+             add[i][j] = mat1[i][j] + mat2[i][j];
+         }
+    }
+
+    printf("Addition of two matrices : \n");
+    for(int i=0;i<size;i++){
+         for(int j=0;j<size;j++){
+            printf("%d ",add[i][j]);
+         }
+        printf("\n");
+    }
+}
+
+void *substraction(){
+    for(int i=0;i<size;i++){
+         for(int j=0;j<size;j++){
+             sub[i][j] = mat1[i][j] - mat2[i][j];
+         }
+    }
+
+    printf("Substraction of two matrices : \n");
+    for(int i=0;i<size;i++){
+         for(int j=0;j<size;j++){
+            printf("%d ",sub[i][j]);
+         }
+        printf("\n");
+    }
+}
+
+void *multiplication(){
+
+    for(int i=0;i<size;i++){
+     for(int j=0;j<size;j++){
+         int sum = 0;
+         for(int k=0;k<size;k++){
+             sum+=(mat1[k][j]*mat2[i][k]);
+         }
+         mul[i][j]=sum;
+        }
+    }
+
+    printf("Multiplication of two matrices : \n");
+    for(int i=0;i<size;i++){
+         for(int j=0;j<size;j++){
+            printf("%d ",mul[i][j]);
+         }
+        printf("\n");
+    }
+}
+
+int main(){
+
+    printf("Enter the size of Array : \n");
+    scanf("%d",&size);
+
+    printf("Enter the elements of Array 1 : \n");
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            scanf("%d",&mat1[i][j]);
+        }
+    }
+
+    printf("Enter the elements of Array 2 : \n");
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            scanf("%d",&mat2[i][j]);
+        }
+    }
+
+    pthread_t threads[THREADS_NUM];
+
+    pthread_create(&threads[0],NULL,addition,NULL);
+    pthread_create(&threads[1],NULL,substraction,NULL);
+    pthread_create(&threads[2],NULL,multiplication,NULL);
+
+    for(int i=0;i<size;i++){
+        pthread_join(threads[i],NULL);
+    }
+
+    return 0;
+}
+
+ReadWriter-------------------------------------------------->>>
+#include<stdio.h>
+#include<pthread.h>
+#include<semaphore.h>
+#include<stdlib.h>
+
+sem_t empty, full;
+pthread_mutex_t mutex;
+int buffer[5];
+int count=0;
+
+void *producer(void *arg){
+    long int num=(long int)arg;
+
+    sem_wait(&empty);
+    pthread_mutex_lock(&mutex);
+
+    buffer[count]=rand()%50;
+    printf("\n Producer %ld produced: %d \n", num+1, buffer[count]);
+    count++;
+    printf(" Buffer: ");
+    for(int i=0;i<count;i++){
+        printf("%d ", buffer[i]);
+    }
+    printf("\n");
+    sleep(1);
+
+    pthread_mutex_unlock(&mutex);
+    sem_post(&full);
+    pthread_exit(NULL);
+}
+
+void *consumer(void *arg){
+    long int num=(long int)arg;
+
+    sem_wait(&full);
+    pthread_mutex_lock(&mutex);
+
+    count--;
+    printf("\n Consumer %ld consumed: %d \n", num+1, buffer[count]);
+    printf(" Buffer: ");
+    for(int i=0;i<count;i++){
+        printf("%d ", buffer[i]);
+    }
+    printf("\n");
+    sleep(1);
+
+    pthread_mutex_unlock(&mutex);
+    sem_post(&empty);
+    pthread_exit(NULL);
+}
+
+int main(){
+    int np, nc;
+    pthread_t p[10], c[10];
+    unsigned long int i,j,k,l;
+
+    printf("Enter number of producers and number of consumers: ");
+    scanf("%d %d",&np, &nc);
+
+    sem_init(&empty,0,5); //variable name, not shared, initial value
+    sem_init(&full,0,0);
+
+    pthread_mutex_init(&mutex, NULL);
+
+    //create producer and consumer threads
+    for(i=0;i<np;i++)
+        pthread_create(&p[i],NULL, producer, (void *)i);
+    for(j=0;j<nc;j++)
+        pthread_create(&c[j],NULL, consumer, (void *)j);
+
+    //join the threads
+    for(k=0;k<np;k++)
+        pthread_join(p[k], NULL);
+    for(l=0;l<nc;l++)
+        pthread_join(c[l], NULL);
+    return 0;
+}
+------------------------------------------------------------>>>
+1. Check if Prime no. :
+prime(){
+echo &quot;Enter a number: &quot;
+read number
+a=2
+while [ “$a” -lt “$number” ]; do
+r=$((number % a))
+if [ “$r” -eq 0 ]; then
+echo &quot;$number is not a prime number.&quot;
+return
+fi
+a=$((a+1))
+done
+echo &quot;$number is a prime number&quot;
+}
+prime
+------------------------------------------------------------>>>
+#!/bin/bash
+echo &quot;Enter a number:&quot;
+read num
+res=1
+for (( i=1; i&lt;=num; i++ ))
+do
+res=$((res * i))
+done
+if [ $res -eq 0 ]; then
+res=1
+fi
+------------------------------------------------------------>>>
+echo &quot;Enter a String&quot;
+read str
+reverse=&quot; &quot;
+len=${#str}
+for (( i=len-1; i&gt;=0; i-- ))
+do
+reverse=&quot;$reverse${str:$i:1}&quot;
+done
+if [[ “$str” == “$reverse” ]]; then
+echo &quot;$str is a palindrome&quot;
+else
+echo &quot;$str is not palindrome&quot;
+fi
